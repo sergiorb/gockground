@@ -4,16 +4,11 @@ import (
   "fmt"
   "net/http"
   "encoding/json"
-  "os/exec"
   "os"
-  "io"
-  "strings"
-  "bytes"
 )
 
 const (
   API_URL = "https://api.imgur.com/3"
-  BACKGROUND_COMMAND = "gsettings set org.cinnamon.desktop.background picture-uri"
 )
 
 type Gockground struct {
@@ -61,52 +56,12 @@ func (g *Gockground) Apply(image Image) {
 
   downloadImage(image, imagePath)
 
-  command := fmt.Sprintf("%v file://%v", BACKGROUND_COMMAND, imagePath)
+  command := getSetWallPapperCommand(imagePath)
 
-  cmd := exec.Command("bash", "-c", command)
+  _, stdErr := executeBashCommand(command)
 
-  var stderr bytes.Buffer
+  if stdErr != "" {
 
-  cmd.Stderr = &stderr
-
-  err := cmd.Run()
-
-  if err != nil {
-    
-    fmt.Println(fmt.Sprint(err) + ": " + stderr.String())
+    fmt.Println(stdErr)
   }
-}
-
-// https://stackoverflow.com/questions/22417283/save-an-image-from-url-to-file
-func downloadImage(image Image, path string) {
-
-  response, err := http.Get(image.Link)
-
-  if err != nil {
-      panic(err)
-  }
-
-  defer response.Body.Close()
-
-  file, err := os.Create(path)
-
-  if err != nil {
-    panic(err)
-  }
-
-  // Use io.Copy to just dump the response body to the file.
-  // This supports huge files
-  _, err = io.Copy(file, response.Body)
-
-  if err != nil {
-
-      panic(err)
-  }
-
-  file.Close()
-}
-
-func extractExtension(image Image) string {
-
-  return strings.Split(image.Itype, "/")[1]
 }
